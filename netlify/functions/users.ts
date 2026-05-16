@@ -1,9 +1,6 @@
 import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { getDatabase } from '@netlify/database';
 import * as jwt from 'jsonwebtoken';
-
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_JLClkY1g8umb@ep-patient-grass-ajpo9ogw-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const sql = neon(DATABASE_URL);
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
 const headers = {
@@ -35,7 +32,8 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const technicians = await sql`SELECT id, email, nama_lengkap FROM users WHERE role = 'teknisi'`;
+    const db = await getDatabase();
+    const technicians = await db.sql`SELECT id, email, nama_lengkap FROM users WHERE role = 'teknisi'`;
     return {
       statusCode: 200,
       headers,

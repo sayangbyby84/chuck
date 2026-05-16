@@ -1,9 +1,8 @@
 import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { getDatabase } from '@netlify/database';
 import * as jwt from 'jsonwebtoken';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_JLClkY1g8umb@ep-patient-grass-ajpo9ogw-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const sql = neon(DATABASE_URL);
+const db = getDatabase();
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
 const headers = {
@@ -36,12 +35,12 @@ export const handler: Handler = async (event) => {
 
   try {
     if (user.role === 'admin') {
-      const total = await sql`SELECT COUNT(*) FROM tickets`;
-      const completed = await sql`SELECT COUNT(*) FROM tickets WHERE status IN ('selesai_teknisi', 'tertutup')`;
-      const process = await sql`SELECT COUNT(*) FROM tickets WHERE status IN ('ditugaskan', 'diproses')`;
-      const pending = await sql`SELECT COUNT(*) FROM tickets WHERE status = 'menunggu'`;
+      const total = await db.sql`SELECT COUNT(*) FROM tickets`;
+      const completed = await db.sql`SELECT COUNT(*) FROM tickets WHERE status IN ('selesai_teknisi', 'tertutup')`;
+      const process = await db.sql`SELECT COUNT(*) FROM tickets WHERE status IN ('ditugaskan', 'diproses')`;
+      const pending = await db.sql`SELECT COUNT(*) FROM tickets WHERE status = 'menunggu'`;
       
-      const categories = await sql`SELECT kategori, COUNT(*) as count FROM tickets GROUP BY kategori`;
+      const categories = await db.sql`SELECT kategori, COUNT(*) as count FROM tickets GROUP BY kategori`;
 
       return {
         statusCode: 200,
@@ -57,10 +56,10 @@ export const handler: Handler = async (event) => {
         })
       };
     } else if (user.role === 'teknisi') {
-      const total = await sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id}`;
-      const completed = await sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status IN ('selesai_teknisi', 'tertutup')`;
-      const process = await sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status = 'diproses'`;
-      const newTasks = await sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status = 'ditugaskan'`;
+      const total = await db.sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id}`;
+      const completed = await db.sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status IN ('selesai_teknisi', 'tertutup')`;
+      const process = await db.sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status = 'diproses'`;
+      const newTasks = await db.sql`SELECT COUNT(*) FROM tickets WHERE teknisi_id = ${user.id} AND status = 'ditugaskan'`;
 
       return {
         statusCode: 200,
@@ -75,9 +74,9 @@ export const handler: Handler = async (event) => {
         })
       };
     } else {
-      const total = await sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id}`;
-      const completed = await sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id} AND status = 'tertutup'`;
-      const process = await sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id} AND status IN ('ditugaskan', 'diproses', 'selesai_teknisi')`;
+      const total = await db.sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id}`;
+      const completed = await db.sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id} AND status = 'tertutup'`;
+      const process = await db.sql`SELECT COUNT(*) FROM tickets WHERE pelapor_id = ${user.id} AND status IN ('ditugaskan', 'diproses', 'selesai_teknisi')`;
 
       return {
         statusCode: 200,

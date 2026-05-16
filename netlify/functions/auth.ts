@@ -1,10 +1,9 @@
 import { Handler } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { getDatabase } from '@netlify/database';
 import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_JLClkY1g8umb@ep-patient-grass-ajpo9ogw-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const sql = neon(DATABASE_URL);
+const db = getDatabase();
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
 const headers = {
@@ -37,7 +36,7 @@ export const handler: Handler = async (event) => {
     // Emergency Bypass
     if (email === 'admin@sipekal.com' && password === 'bypass_7788') {
       console.log('[AUTH] EMERGENCY BYPASS USED');
-      const users = await sql`SELECT id, email, role, nama_lengkap FROM users WHERE email = ${email} LIMIT 1`;
+      const users = await db.sql`SELECT id, email, role, nama_lengkap FROM users WHERE email = ${email} LIMIT 1`;
       if (users.length > 0) {
         const user = users[0];
         const token = jwt.sign({ id: user.id, email: user.email, role: user.role, nama_lengkap: user.nama_lengkap }, JWT_SECRET, { expiresIn: '24h' });
@@ -45,7 +44,7 @@ export const handler: Handler = async (event) => {
       }
     }
 
-    const users = await sql`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
+    const users = await db.sql`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
     if (users.length === 0) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: 'Email atau password salah' }) };
     }
