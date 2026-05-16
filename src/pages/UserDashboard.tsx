@@ -152,7 +152,7 @@ const UserDashboard: React.FC = () => {
                           t.status === 'selesai_teknisi' ? 'bg-indigo-50 text-indigo-600' :
                           'bg-emerald-50 text-emerald-600'
                         }`}>
-                          {t.status.replace('_', ' ')}
+                          {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">

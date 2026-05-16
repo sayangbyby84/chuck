@@ -14,6 +14,9 @@ const TicketDetail: React.FC = () => {
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [catatan, setCatatan] = useState('');
+  const [fotoSelesai, setFotoSelesai] = useState('');
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
 
   const fetchTicket = async () => {
     const data = await apiFetch(`/tickets?id=${id}`);
@@ -37,11 +40,29 @@ const TicketDetail: React.FC = () => {
     if (result) fetchTicket();
   };
 
+  const handleComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = await apiFetch('/tickets', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'complete',
+        ticket_id: ticket.id,
+        catatan_perbaikan: catatan,
+        foto_selesai: fotoSelesai
+      })
+    });
+    if (result) {
+      setShowCompleteForm(false);
+      fetchTicket();
+    }
+  };
+
   if (loading) return <div className="p-20 text-center">Memuat...</div>;
   if (!ticket) return <div className="p-20 text-center text-red-500">Tiket tidak ditemukan.</div>;
 
   return (
-    <Layout role={user.role}>
+    <>
+      <Layout role={user.role}>
       <div className="max-w-4xl mx-auto space-y-6">
         <button 
           onClick={() => navigate(-1)}
@@ -67,9 +88,11 @@ const TicketDetail: React.FC = () => {
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span className={`px-4 py-2 rounded-xl font-bold text-sm shadow-sm ${
-                  ticket.status === 'tertutup' ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'
+                  ticket.status === 'tertutup' ? 'bg-emerald-500 text-white' : 
+                  ticket.status === 'diproses' ? 'bg-amber-500 text-white' : 
+                  'bg-blue-600 text-white'
                 }`}>
-                  {ticket.status.replace('_', ' ').toUpperCase()}
+                  {ticket.status === 'diproses' ? 'SEDANG DIKERJAKAN' : ticket.status.replace('_', ' ').toUpperCase()}
                 </span>
                 {user.role === 'user' && ticket.status === 'selesai_teknisi' && (
                   <button 
@@ -77,6 +100,14 @@ const TicketDetail: React.FC = () => {
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
                   >
                     Konfirmasi & Tutup Tiket
+                  </button>
+                )}
+                {user.role === 'teknisi' && ticket.status === 'diproses' && (
+                  <button 
+                    onClick={() => setShowCompleteForm(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                  >
+                    Selesaikan Tugas
                   </button>
                 )}
               </div>
@@ -137,6 +168,57 @@ const TicketDetail: React.FC = () => {
         </div>
       </div>
     </Layout>
+      
+      {/* Completion Modal */}
+      {showCompleteForm && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-xl font-bold text-slate-900">Selesaikan Tugas</h2>
+              <p className="text-sm text-slate-500 mt-1">Isi laporan hasil perbaikan untuk tiket {ticket.ticket_number}</p>
+            </div>
+            <form onSubmit={handleComplete} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Catatan Perbaikan</label>
+                <textarea 
+                  required
+                  rows={3}
+                  className="w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Deskripsikan tindakan yang telah dilakukan..."
+                  value={catatan}
+                  onChange={e => setCatatan(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">URL Foto Hasil (Opsional)</label>
+                <input 
+                  type="url"
+                  className="w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="https://..."
+                  value={fotoSelesai}
+                  onChange={e => setFotoSelesai(e.target.value)}
+                />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setShowCompleteForm(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-bold"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold"
+                >
+                  Kirim Laporan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

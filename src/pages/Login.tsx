@@ -31,7 +31,7 @@ const Login: React.FC = () => {
         else if (data.user.role === 'teknisi') navigate('/teknisi');
         else navigate('/user');
       }
-    } catch (err) {
+    } catch {
       setError('Gagal menghubungkan ke server.');
     } finally {
       setLoading(false);

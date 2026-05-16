@@ -17,6 +17,7 @@ const TeknisiDashboard: React.FC = () => {
 
   // Completion form state
   const [completingTicket, setCompletingTicket] = useState<any>(null);
+  const [acceptingTicket, setAcceptingTicket] = useState<any>(null);
   const [catatan, setCatatan] = useState('');
   const [fotoSelesai, setFotoSelesai] = useState('');
 
@@ -38,15 +39,19 @@ const TeknisiDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAccept = async (ticketId: number) => {
+  const handleAccept = async () => {
+    if (!acceptingTicket) return;
     const result = await apiFetch('/tickets', {
       method: 'POST',
       body: JSON.stringify({
         action: 'accept',
-        ticket_id: ticketId
+        ticket_id: acceptingTicket.id
       })
     });
-    if (result) fetchData();
+    if (result) {
+      setAcceptingTicket(null);
+      fetchData();
+    }
   };
 
   const handleComplete = async (e: React.FormEvent) => {
@@ -129,7 +134,7 @@ const TeknisiDashboard: React.FC = () => {
                         t.status === 'diproses' ? 'bg-amber-100 text-amber-600' :
                         'bg-emerald-100 text-emerald-600'
                       }`}>
-                        {t.status.toUpperCase()}
+                        {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                     <h4 className="font-bold text-slate-800 text-lg">{t.judul}</h4>
@@ -144,7 +149,7 @@ const TeknisiDashboard: React.FC = () => {
                   <div className="flex items-center gap-3">
                     {t.status === 'ditugaskan' && (
                       <button 
-                        onClick={() => handleAccept(t.id)}
+                        onClick={() => setAcceptingTicket(t)}
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-all"
                       >
                         Terima Tugas
@@ -170,6 +175,32 @@ const TeknisiDashboard: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Accept Modal */}
+        {acceptingTicket && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full">
+              <div className="p-6 border-b border-slate-200">
+                <h2 className="text-xl font-bold text-slate-900">Konfirmasi</h2>
+                <p className="text-sm text-slate-500 mt-1">Apakah Anda yakin akan menerima tugas {acceptingTicket.ticket_number}?</p>
+              </div>
+              <div className="p-6 pt-4 flex gap-3">
+                <button 
+                  onClick={() => setAcceptingTicket(null)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={handleAccept}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Terima
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Completion Modal */}
         {completingTicket && (

@@ -16,6 +16,7 @@ const AdminDashboard: React.FC = () => {
   const [tickets, setTickets] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('Semua');
   
   // Assignment state
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -63,6 +64,14 @@ const AdminDashboard: React.FC = () => {
       fetchData();
     }
   };
+
+  const filteredTickets = tickets.filter((t: any) => {
+    if (activeTab === 'Semua') return true;
+    if (activeTab === 'Menunggu') return t.status === 'menunggu';
+    if (activeTab === 'Sedang Dikerjakan') return t.status === 'ditugaskan' || t.status === 'diproses';
+    if (activeTab === 'Selesai / Tutup') return t.status === 'selesai_teknisi' || t.status === 'tertutup';
+    return true;
+  });
 
   return (
     <Layout role="admin">
@@ -112,8 +121,21 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Table */}
           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="font-bold text-slate-800">Manajemen Tiket</h3>
+              <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto overflow-x-auto">
+                {['Semua', 'Menunggu', 'Sedang Dikerjakan', 'Selesai / Tutup'].map(tab => (
+                  <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all ${
+                      activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -127,10 +149,10 @@ const AdminDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {tickets.length === 0 ? (
+                  {filteredTickets.length === 0 ? (
                     <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
                   ) : (
-                    tickets.map((t: any) => (
+                    filteredTickets.map((t: any) => (
                       <tr key={t.id} className="hover:bg-slate-50 text-sm">
                         <td className="px-6 py-4 font-mono font-bold text-blue-600">{t.ticket_number}</td>
                         <td className="px-6 py-4">
@@ -145,7 +167,7 @@ const AdminDashboard: React.FC = () => {
                             t.status === 'diproses' ? 'bg-amber-100 text-amber-600' :
                             'bg-emerald-100 text-emerald-600'
                           }`}>
-                            {t.status.toUpperCase()}
+                            {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ').toUpperCase()}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
@@ -159,7 +181,7 @@ const AdminDashboard: React.FC = () => {
                           ) : (
                             <button 
                               onClick={() => window.location.href = `/tickets/${t.id}`}
-                              className="text-slate-400 hover:text-blue-600"
+                              className="text-blue-600 hover:underline font-medium text-xs bg-blue-50 px-3 py-1 rounded transition-colors"
                             >
                               Detail
                             </button>
