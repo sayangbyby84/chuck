@@ -21,8 +21,8 @@ const AdminDashboard: React.FC = () => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [selectedTech, setSelectedTech] = useState('');
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     const dashData = await apiFetch('/dashboard');
     if (dashData) {
       setStats(dashData.stats);
@@ -34,11 +34,15 @@ const AdminDashboard: React.FC = () => {
 
     const techData = await apiFetch('/users');
     if (techData) setTechnicians(techData);
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleAssign = async () => {

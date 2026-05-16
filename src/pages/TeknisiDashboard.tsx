@@ -20,18 +20,22 @@ const TeknisiDashboard: React.FC = () => {
   const [catatan, setCatatan] = useState('');
   const [fotoSelesai, setFotoSelesai] = useState('');
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     const dashData = await apiFetch('/dashboard');
     if (dashData) setStats(dashData.stats);
     
     const ticketData = await apiFetch('/tickets');
     if (ticketData) setTickets(ticketData);
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleAccept = async (ticketId: number) => {
