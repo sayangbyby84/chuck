@@ -1,6 +1,9 @@
 import { Handler } from '@netlify/functions';
-import { getDatabase } from '@netlify/database';
+import { neon } from '@neondatabase/serverless';
 import * as jwt from 'jsonwebtoken';
+
+const DATABASE_URL = 'postgresql://netlifydb_owner:npg_xou9Or3fhysk@ep-morning-fog-aju1u1c7.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
+const sql = neon(DATABASE_URL);
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
 const headers = {
@@ -34,35 +37,33 @@ export const handler: Handler = async (event) => {
   const { httpMethod } = event;
 
   try {
-    const db = await getDatabase();
-
     if (httpMethod === 'GET') {
       const { status } = event.queryStringParameters || {};
       
       let query;
       if (user.role === 'admin') {
         if (status) {
-          query = await db.sql`SELECT t.*, u.nama_lengkap as pelapor_nama, tech.nama_lengkap as teknisi_nama 
+          query = await sql`SELECT t.*, u.nama_lengkap as pelapor_nama, tech.nama_lengkap as teknisi_nama 
                             FROM tickets t 
                             LEFT JOIN users u ON t.pelapor_id = u.id 
                             LEFT JOIN users tech ON t.teknisi_id = tech.id 
                             WHERE t.status = ${status} 
                             ORDER BY t.created_at DESC`;
         } else {
-          query = await db.sql`SELECT t.*, u.nama_lengkap as pelapor_nama, tech.nama_lengkap as teknisi_nama 
+          query = await sql`SELECT t.*, u.nama_lengkap as pelapor_nama, tech.nama_lengkap as teknisi_nama 
                             FROM tickets t 
                             LEFT JOIN users u ON t.pelapor_id = u.id 
                             LEFT JOIN users tech ON t.teknisi_id = tech.id 
                             ORDER BY t.created_at DESC`;
         }
       } else if (user.role === 'teknisi') {
-        query = await db.sql`SELECT t.*, u.nama_lengkap as pelapor_nama 
+        query = await sql`SELECT t.*, u.nama_lengkap as pelapor_nama 
                           FROM tickets t 
                           LEFT JOIN users u ON t.pelapor_id = u.id 
                           WHERE t.teknisi_id = ${user.id} 
                           ORDER BY t.created_at DESC`;
       } else {
-        query = await db.sql`SELECT t.*, tech.nama_lengkap as teknisi_nama 
+        query = await sql`SELECT t.*, tech.nama_lengkap as teknisi_nama 
                           FROM tickets t 
                           LEFT JOIN users tech ON t.teknisi_id = tech.id 
                           WHERE t.pelapor_id = ${user.id} 
@@ -77,7 +78,7 @@ export const handler: Handler = async (event) => {
       
       if (body.action === 'create') {
         const ticketNumber = `TKT-${Date.now()}`;
-        const result = await db.sql`
+        const result = await sql`
           INSERT INTO tickets (ticket_number, status, pelapor_id, judul, kategori, lokasi, prioritas, deskripsi, foto_kerusakan, tgl_kejadian)
           VALUES (${ticketNumber}, 'menunggu', ${user.id}, ${body.judul}, ${body.kategori}, ${body.lokasi}, ${body.prioritas}, ${body.deskripsi}, ${body.foto_kerusakan}, ${body.tgl_kejadian})
           RETURNING *
@@ -87,7 +88,7 @@ export const handler: Handler = async (event) => {
 
       if (body.action === 'assign') {
         if (user.role !== 'admin') return { statusCode: 403, headers, body: 'Forbidden' };
-        const result = await db.sql`
+        const result = await sql`
           UPDATE tickets SET teknisi_id = ${body.teknisi_id}, status = 'ditugaskan', updated_at = NOW()
           WHERE id = ${body.ticket_id}
           RETURNING *
@@ -97,7 +98,7 @@ export const handler: Handler = async (event) => {
 
       if (body.action === 'accept') {
         if (user.role !== 'teknisi') return { statusCode: 403, headers, body: 'Forbidden' };
-        const result = await db.sql`
+        const result = await sql`
           UPDATE tickets SET status = 'diproses', updated_at = NOW()
           WHERE id = ${body.ticket_id} AND teknisi_id = ${user.id}
           RETURNING *
@@ -107,7 +108,7 @@ export const handler: Handler = async (event) => {
 
       if (body.action === 'complete') {
         if (user.role !== 'teknisi') return { statusCode: 403, headers, body: 'Forbidden' };
-        const result = await db.sql`
+        const result = await sql`
           UPDATE tickets SET status = 'selesai_teknisi', catatan_perbaikan = ${body.catatan_perbaikan}, 
           foto_selesai = ${body.foto_selesai}, tgl_selesai = NOW(), updated_at = NOW()
           WHERE id = ${body.ticket_id} AND teknisi_id = ${user.id}
@@ -118,7 +119,7 @@ export const handler: Handler = async (event) => {
 
       if (body.action === 'close') {
         if (user.role !== 'user') return { statusCode: 403, headers, body: 'Forbidden' };
-        const result = await db.sql`
+        const result = await sql`
           UPDATE tickets SET status = 'tertutup', updated_at = NOW()
           WHERE id = ${body.ticket_id} AND pelapor_id = ${user.id}
           RETURNING *
