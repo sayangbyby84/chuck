@@ -2,7 +2,7 @@ import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 import * as jwt from 'jsonwebtoken';
 
-const DATABASE_URL = 'postgresql://netlifydb_owner:npg_xou9Or3fhysk@ep-morning-fog-aju1u1c7.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
+const DATABASE_URL = 'postgresql://netlifydb_owner:npg_79yEVJbSaTgo@ep-calm-credit-ajct88wc.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
 const sql = neon(DATABASE_URL);
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 

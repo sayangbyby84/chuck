@@ -2,7 +2,7 @@ import { Pool } from '@neondatabase/serverless';
 import fs from 'fs';
 import path from 'path';
 
-const DATABASE_URL = 'postgresql://netlifydb_owner:npg_xou9Or3fhysk@ep-morning-fog-aju1u1c7.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
+const DATABASE_URL = 'postgresql://netlifydb_owner:npg_79yEVJbSaTgo@ep-calm-credit-ajct88wc.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
 const pool = new Pool({ connectionString: DATABASE_URL });
 
 async function runMigrations() {
