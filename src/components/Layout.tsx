@@ -26,16 +26,16 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
   const menuItems = {
     admin: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
-      { icon: <ClipboardList size={20} />, label: 'Manajemen Tiket', path: '/admin' },
-      { icon: <Users size={20} />, label: 'Data Teknisi', path: '/admin' },
+      { icon: <ClipboardList size={20} />, label: 'Manajemen Tiket', path: '/admin?tab=tickets' },
+      { icon: <Users size={20} />, label: 'Data Teknisi', path: '/admin?tab=teknisi' },
     ],
     user: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/user' },
-      { icon: <ClipboardList size={20} />, label: 'Riwayat Laporan', path: '/user' },
+      { icon: <ClipboardList size={20} />, label: 'Riwayat Laporan', path: '/user?tab=history' },
     ],
     teknisi: [
       { icon: <LayoutDashboard size={20} />, label: 'Tugas Saya', path: '/teknisi' },
-      { icon: <ClipboardList size={20} />, label: 'Riwayat Kerja', path: '/teknisi' },
+      { icon: <ClipboardList size={20} />, label: 'Riwayat Kerja', path: '/teknisi?tab=history' },
     ]
   };
 

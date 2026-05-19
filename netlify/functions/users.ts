@@ -2,7 +2,7 @@ import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 import * as jwt from 'jsonwebtoken';
 
-const DATABASE_URL = 'postgresql://netlifydb_owner:npg_79yEVJbSaTgo@ep-calm-credit-ajct88wc.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://netlifydb_owner:npg_pew0qA8tdMNz@ep-misty-frog-aj11o5kk.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
 const sql = neon(DATABASE_URL);
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
@@ -30,12 +30,38 @@ export const handler: Handler = async (event) => {
   }
 
   const user = getUserIdFromToken(event.headers.authorization);
-  if (!user || user.role !== 'admin') {
+  if (!user) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
   try {
-    const technicians = await sql`SELECT id, email, nama_lengkap FROM users WHERE role = 'teknisi'`;
+    if (event.httpMethod === 'POST' || event.httpMethod === 'PATCH') {
+      const body = JSON.parse(event.body || '{}');
+      if (body.action === 'update_status' && user.role === 'teknisi') {
+        const { status_teknisi } = body;
+        if (!['aktif', 'sedang bekerja', 'non-aktif'].includes(status_teknisi)) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid status' }) };
+        }
+        await sql`UPDATE users SET status_teknisi = ${status_teknisi} WHERE id = ${user.id}`;
+        return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      }
+      return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden' }) };
+    }
+
+    if (user.role === 'teknisi') {
+      const self = await sql`SELECT id, email, nama_lengkap, status_teknisi FROM users WHERE id = ${user.id}`;
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(self)
+      };
+    }
+
+    if (user.role !== 'admin') {
+      return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden' }) };
+    }
+
+    const technicians = await sql`SELECT id, email, nama_lengkap, status_teknisi FROM users WHERE role = 'teknisi'`;
     return {
       statusCode: 200,
       headers,

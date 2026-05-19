@@ -2,7 +2,7 @@ import { Handler } from '@netlify/functions';
 import { neon } from '@neondatabase/serverless';
 import * as jwt from 'jsonwebtoken';
 
-const DATABASE_URL = 'postgresql://netlifydb_owner:npg_79yEVJbSaTgo@ep-calm-credit-ajct88wc.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://netlifydb_owner:npg_pew0qA8tdMNz@ep-misty-frog-aj11o5kk.c-3.us-east-2.db.netlify.com/netlifydb?sslmode=require';
 const sql = neon(DATABASE_URL);
 const JWT_SECRET = process.env.JWT_SECRET || 'sipekal_secret_key_2024_fresh';
 
@@ -98,11 +98,18 @@ export const handler: Handler = async (event) => {
 
       if (body.action === 'accept') {
         if (user.role !== 'teknisi') return { statusCode: 403, headers, body: 'Forbidden' };
+        
+        // Use a transaction or sequential queries. We'll do sequential here.
         const result = await sql`
           UPDATE tickets SET status = 'diproses', updated_at = NOW()
           WHERE id = ${body.ticket_id} AND teknisi_id = ${user.id}
           RETURNING *
         `;
+        
+        if (result.length > 0) {
+          await sql`UPDATE users SET status_teknisi = 'sedang bekerja' WHERE id = ${user.id}`;
+        }
+        
         return { statusCode: 200, headers, body: JSON.stringify(result[0]) };
       }
 
@@ -114,6 +121,11 @@ export const handler: Handler = async (event) => {
           WHERE id = ${body.ticket_id} AND teknisi_id = ${user.id}
           RETURNING *
         `;
+
+        if (result.length > 0) {
+          await sql`UPDATE users SET status_teknisi = 'aktif' WHERE id = ${user.id}`;
+        }
+
         return { statusCode: 200, headers, body: JSON.stringify(result[0]) };
       }
 

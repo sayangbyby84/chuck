@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
+import DataTeknisi from '../components/DataTeknisi';
 import { 
   Users, 
   ClipboardList, 
@@ -11,6 +13,9 @@ import {
 import { apiFetch } from '../lib/api';
 
 const AdminDashboard: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab');
+
   const [stats, setStats] = useState({ total: 0, completed: 0, process: 0, pending: 0 });
   const [categories, setCategories] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -77,52 +82,25 @@ const AdminDashboard: React.FC = () => {
     <Layout role="admin">
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Administrator Console</h1>
-          <p className="text-slate-500">Kelola tiket, disposisi teknisi, dan pantau kinerja sistem.</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {currentTab === 'teknisi' ? 'Manajemen Staf Teknisi' : 
+             currentTab === 'tickets' ? 'Manajemen Tiket & Disposisi' : 
+             'Administrator Console'}
+          </h1>
+          <p className="text-slate-500">
+            {currentTab === 'teknisi' ? 'Pantau dan kelola ketersediaan serta penugasan seluruh teknisi.' : 
+             currentTab === 'tickets' ? 'Daftar keseluruhan laporan kerusakan sarana prasarana SIPEKAL.' : 
+             'Kelola tiket, disposisi teknisi, dan pantau kinerja sistem.'}
+          </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><ClipboardList size={20} /></div>
-              <span className="text-xs font-bold text-slate-400">TOTAL</span>
-            </div>
-            <p className="text-2xl font-bold">{stats.total}</p>
-            <p className="text-xs text-slate-500 mt-1">Keseluruhan Tiket</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><AlertTriangle size={20} /></div>
-              <span className="text-xs font-bold text-slate-400">PENDING</span>
-            </div>
-            <p className="text-2xl font-bold">{stats.pending}</p>
-            <p className="text-xs text-slate-500 mt-1">Menunggu Disposisi</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Clock size={20} /></div>
-              <span className="text-xs font-bold text-slate-400">PROSES</span>
-            </div>
-            <p className="text-2xl font-bold">{stats.process}</p>
-            <p className="text-xs text-slate-500 mt-1">Sedang Dikerjakan</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={20} /></div>
-              <span className="text-xs font-bold text-slate-400">SELESAI</span>
-            </div>
-            <p className="text-2xl font-bold">{stats.completed}</p>
-            <p className="text-xs text-slate-500 mt-1">Tiket Tertutup</p>
-          </div>
-        </div>
-
-        {/* Analytics & Management */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Table */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Main Content Areas */}
+        {currentTab === 'teknisi' ? (
+          <DataTeknisi />
+        ) : currentTab === 'tickets' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h3 className="font-bold text-slate-800">Manajemen Tiket</h3>
+              <h3 className="font-bold text-slate-800">Daftar Tiket SIPEKAL</h3>
               <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto overflow-x-auto">
                 {['Semua', 'Menunggu', 'Sedang Dikerjakan', 'Selesai / Tutup'].map(tab => (
                   <button 
@@ -194,48 +172,183 @@ const AdminDashboard: React.FC = () => {
               </table>
             </div>
           </div>
-
-          {/* Right Sidebar Analytics */}
-          <div className="flex flex-col gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <ArrowRight size={18} className="text-blue-600" /> Kategori Terbanyak
-              </h3>
-              <div className="space-y-4">
-                {categories.map((c: any, idx) => (
-                  <div key={idx}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-600">{c.kategori}</span>
-                      <span className="font-bold">{c.count}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-blue-600 h-full transition-all duration-1000" 
-                        style={{ width: `${(c.count / stats.total) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-                {categories.length === 0 && <p className="text-sm text-slate-400 text-center py-4">Belum ada data analitik.</p>}
+        ) : (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><ClipboardList size={20} /></div>
+                  <span className="text-xs font-bold text-slate-400">TOTAL</span>
+                </div>
+                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs text-slate-500 mt-1">Keseluruhan Tiket</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><AlertTriangle size={20} /></div>
+                  <span className="text-xs font-bold text-slate-400">PENDING</span>
+                </div>
+                <p className="text-2xl font-bold">{stats.pending}</p>
+                <p className="text-xs text-slate-500 mt-1">Menunggu Disposisi</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Clock size={20} /></div>
+                  <span className="text-xs font-bold text-slate-400">PROSES</span>
+                </div>
+                <p className="text-2xl font-bold">{stats.process}</p>
+                <p className="text-xs text-slate-500 mt-1">Sedang Dikerjakan</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={20} /></div>
+                  <span className="text-xs font-bold text-slate-400">SELESAI</span>
+                </div>
+                <p className="text-2xl font-bold">{stats.completed}</p>
+                <p className="text-xs text-slate-500 mt-1">Tiket Tertutup</p>
               </div>
             </div>
 
-            <div className="bg-slate-900 p-6 rounded-xl shadow-lg text-white">
-              <div className="flex items-center gap-3 mb-4">
-                <Users className="text-blue-400" />
-                <h3 className="font-bold">Status Teknisi</h3>
-              </div>
-              <div className="space-y-3">
-                {technicians.map((tech: any) => (
-                  <div key={tech.id} className="flex items-center justify-between text-sm border-b border-white/10 pb-2 last:border-0">
-                    <span>{tech.nama_lengkap}</span>
-                    <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">AKTIF</span>
+            {/* Analytics & Management */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Table */}
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h3 className="font-bold text-slate-800">Manajemen Tiket</h3>
+                  <div className="flex bg-slate-100 p-1 rounded-lg self-start sm:self-auto overflow-x-auto">
+                    {['Semua', 'Menunggu', 'Sedang Dikerjakan', 'Selesai / Tutup'].map(tab => (
+                      <button 
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all ${
+                          activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+                      <tr>
+                        <th className="px-6 py-4">Tiket</th>
+                        <th className="px-6 py-4">Pelapor</th>
+                        <th className="px-6 py-4">Kategori</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredTickets.length === 0 ? (
+                        <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
+                      ) : (
+                        filteredTickets.map((t: any) => (
+                          <tr key={t.id} className="hover:bg-slate-50 text-sm">
+                            <td className="px-6 py-4 font-mono font-bold text-blue-600">{t.ticket_number}</td>
+                            <td className="px-6 py-4">
+                              <p className="font-medium">{t.pelapor_nama}</p>
+                              <p className="text-[10px] text-slate-400">{t.lokasi}</p>
+                            </td>
+                            <td className="px-6 py-4 text-slate-600">{t.kategori}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                t.status === 'menunggu' ? 'bg-slate-100 text-slate-600' :
+                                t.status === 'ditugaskan' ? 'bg-blue-100 text-blue-600' :
+                                t.status === 'diproses' ? 'bg-amber-100 text-amber-600' :
+                                'bg-emerald-100 text-emerald-600'
+                              }`}>
+                                {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ').toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {t.status === 'menunggu' ? (
+                                <button 
+                                  onClick={() => setSelectedTicket(t)}
+                                  className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                                >
+                                  Disposisi
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => window.location.href = `/tickets/${t.id}`}
+                                  className="text-blue-600 hover:underline font-medium text-xs bg-blue-50 px-3 py-1 rounded transition-colors"
+                                >
+                                  Detail
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Right Sidebar Analytics */}
+              <div className="flex flex-col gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                  <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <ArrowRight size={18} className="text-blue-600" /> Kategori Terbanyak
+                  </h3>
+                  <div className="space-y-4">
+                    {categories.map((c: any, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-600">{c.kategori}</span>
+                          <span className="font-bold">{c.count}</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-blue-600 h-full transition-all duration-1000" 
+                            style={{ width: `${(c.count / stats.total) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                    {categories.length === 0 && <p className="text-sm text-slate-400 text-center py-4">Belum ada data analitik.</p>}
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-6 rounded-xl shadow-lg text-white">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Users className="text-blue-400" />
+                    <h3 className="font-bold">Status Teknisi</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {technicians.map((tech: any) => (
+                      <div key={tech.id} className="flex items-center justify-between text-sm border-b border-white/10 pb-2 last:border-0">
+                        <span>{tech.nama_lengkap}</span>
+                        {tech.status_teknisi === 'aktif' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-bold">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            AKTIF
+                          </span>
+                        ) : tech.status_teknisi === 'sedang bekerja' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-bold">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                            SIBUK
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-slate-500/20 text-slate-400 px-2.5 py-0.5 rounded-full font-bold">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                            OFFLINE
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Disposisi Modal */}
         {selectedTicket && (
@@ -254,7 +367,7 @@ const AdminDashboard: React.FC = () => {
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">-- Pilih Teknisi Tersedia --</option>
-                    {technicians.map((tech: any) => (
+                    {technicians.filter((tech: any) => tech.status_teknisi === 'aktif').map((tech: any) => (
                       <option key={tech.id} value={tech.id}>{tech.nama_lengkap}</option>
                     ))}
                   </select>
