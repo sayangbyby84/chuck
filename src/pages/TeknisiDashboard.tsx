@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { convertImageToBase64 } from '../lib/imageUtils';
+import CountdownTimer from '../components/CountdownTimer';
 
 const TeknisiDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -305,6 +306,9 @@ const TeknisiDashboard: React.FC = () => {
                             t.prioritas === 'Tinggi' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
                             'bg-slate-100 text-slate-600'
                           }`}>{t.prioritas}</span>
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            Sisa SLA: <CountdownTimer batasSla={t.batas_sla} status={t.status} />
+                          </div>
                         </div>
                         <p className="text-sm text-slate-600 mt-3 line-clamp-2">{t.deskripsi}</p>
                         

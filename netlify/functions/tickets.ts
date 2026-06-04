@@ -78,9 +78,17 @@ export const handler: Handler = async (event) => {
       
       if (body.action === 'create') {
         const ticketNumber = `TKT-${Date.now()}`;
+        
+        // SLA Calculation
+        let slaHours = 24;
+        if (body.prioritas === 'Tinggi' || body.prioritas === 'Darurat') slaHours = 2;
+        else if (body.prioritas === 'Sedang') slaHours = 8;
+        
+        const batasSla = new Date(Date.now() + slaHours * 60 * 60 * 1000).toISOString();
+
         const result = await sql`
-          INSERT INTO tickets (ticket_number, status, pelapor_id, judul, kategori, lokasi, prioritas, deskripsi, foto_kerusakan, tgl_kejadian)
-          VALUES (${ticketNumber}, 'menunggu', ${user.id}, ${body.judul}, ${body.kategori}, ${body.lokasi}, ${body.prioritas}, ${body.deskripsi}, ${body.foto_kerusakan}, ${body.tgl_kejadian})
+          INSERT INTO tickets (ticket_number, status, pelapor_id, judul, kategori, lokasi, prioritas, deskripsi, foto_kerusakan, tgl_kejadian, batas_sla)
+          VALUES (${ticketNumber}, 'menunggu', ${user.id}, ${body.judul}, ${body.kategori}, ${body.lokasi}, ${body.prioritas}, ${body.deskripsi}, ${body.foto_kerusakan}, ${body.tgl_kejadian}, ${batasSla})
           RETURNING *
         `;
         return { statusCode: 201, headers, body: JSON.stringify(result[0]) };

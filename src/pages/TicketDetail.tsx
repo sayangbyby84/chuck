@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { convertImageToBase64 } from '../lib/imageUtils';
+import CountdownTimer from '../components/CountdownTimer';
 
 const TicketDetail: React.FC = () => {
   const { id } = useParams();
@@ -151,6 +152,24 @@ const TicketDetail: React.FC = () => {
           {/* Content */}
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-6">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h3 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Informasi SLA (Service Level Agreement)</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Waktu Dibuat:</span>
+                    <span className="font-medium text-slate-700">{new Date(ticket.created_at).toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Batas Maksimal (Target):</span>
+                    <span className="font-medium text-slate-700">{ticket.batas_sla ? new Date(ticket.batas_sla).toLocaleString('id-ID') : '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
+                    <span className="font-bold text-slate-700">Sisa Waktu:</span>
+                    <CountdownTimer batasSla={ticket.batas_sla} status={ticket.status} />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Deskripsi Masalah</h3>
                 <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">

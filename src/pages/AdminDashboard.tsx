@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import DataTeknisi from '../components/DataTeknisi';
+import CountdownTimer from '../components/CountdownTimer';
 import { 
   Users, 
   ClipboardList, 
   Clock, 
   CheckCircle2,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldOff
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -22,10 +26,35 @@ const AdminDashboard: React.FC = () => {
   const [technicians, setTechnicians] = useState([]);
   const [, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Semua');
+  const [slaStats, setSlaStats] = useState({ aman: 0, mendekati: 0, overdue: 0, percentage: 0 });
   
   // Assignment state
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [selectedTech, setSelectedTech] = useState('');
+
+  const calculateSLAStats = (allTickets: any[]) => {
+    let aman = 0, mendekati = 0, overdue = 0;
+    const now = new Date().getTime();
+
+    allTickets.forEach(t => {
+      if (!t.batas_sla) return;
+      if (t.status === 'selesai_teknisi' || t.status === 'tertutup') {
+        aman++; // Considering closed as safe/achieved for analytics
+        return;
+      }
+
+      const limit = new Date(t.batas_sla).getTime();
+      const diff = limit - now;
+      
+      if (diff <= 0) overdue++;
+      else if (diff <= 30 * 60 * 1000) mendekati++;
+      else aman++;
+    });
+
+    const totalTracked = aman + mendekati + overdue;
+    const percentage = totalTracked > 0 ? Math.round((aman / totalTracked) * 100) : 0;
+    setSlaStats({ aman, mendekati, overdue, percentage });
+  };
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -36,7 +65,10 @@ const AdminDashboard: React.FC = () => {
     }
     
     const ticketData = await apiFetch('/tickets');
-    if (ticketData) setTickets(ticketData);
+    if (ticketData) {
+      setTickets(ticketData);
+      calculateSLAStats(ticketData);
+    }
 
     const techData = await apiFetch('/users');
     if (techData) setTechnicians(techData);
@@ -123,12 +155,13 @@ const AdminDashboard: React.FC = () => {
                     <th className="px-6 py-4">Pelapor</th>
                     <th className="px-6 py-4">Kategori</th>
                     <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Sisa Waktu</th>
                     <th className="px-6 py-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTickets.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
+                    <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
                   ) : (
                     filteredTickets.map((t: any) => (
                       <tr key={t.id} className="hover:bg-slate-50 text-sm">
@@ -147,6 +180,9 @@ const AdminDashboard: React.FC = () => {
                           }`}>
                             {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ').toUpperCase()}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <CountdownTimer batasSla={t.batas_sla} status={t.status} />
                         </td>
                         <td className="px-6 py-4 text-center">
                           {t.status === 'menunggu' ? (
@@ -174,6 +210,31 @@ const AdminDashboard: React.FC = () => {
           </div>
         ) : (
           <>
+            {/* SLA Mini-Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-emerald-700">Aman (On-Track)</p>
+                  <p className="text-2xl font-bold text-emerald-800 mt-1">{slaStats.aman}</p>
+                </div>
+                <ShieldCheck size={36} className="text-emerald-500 opacity-80" />
+              </div>
+              <div className="bg-amber-50 border border-amber-100 p-6 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-amber-700">Mendekati Batas</p>
+                  <p className="text-2xl font-bold text-amber-800 mt-1">{slaStats.mendekati}</p>
+                </div>
+                <ShieldAlert size={36} className="text-amber-500 opacity-80" />
+              </div>
+              <div className="bg-red-50 border border-red-100 p-6 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-red-700">Overdue (Terlewat)</p>
+                  <p className="text-2xl font-bold text-red-800 mt-1">{slaStats.overdue}</p>
+                </div>
+                <ShieldOff size={36} className="text-red-500 opacity-80" />
+              </div>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -238,12 +299,13 @@ const AdminDashboard: React.FC = () => {
                         <th className="px-6 py-4">Pelapor</th>
                         <th className="px-6 py-4">Kategori</th>
                         <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Sisa Waktu</th>
                         <th className="px-6 py-4 text-center">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredTickets.length === 0 ? (
-                        <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
+                        <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Belum ada tiket masuk.</td></tr>
                       ) : (
                         filteredTickets.map((t: any) => (
                           <tr key={t.id} className="hover:bg-slate-50 text-sm">
@@ -262,6 +324,9 @@ const AdminDashboard: React.FC = () => {
                               }`}>
                                 {t.status === 'diproses' ? 'SEDANG DIKERJAKAN' : t.status.replace('_', ' ').toUpperCase()}
                               </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <CountdownTimer batasSla={t.batas_sla} status={t.status} />
                             </td>
                             <td className="px-6 py-4 text-center">
                               {t.status === 'menunggu' ? (
@@ -290,6 +355,25 @@ const AdminDashboard: React.FC = () => {
 
               {/* Right Sidebar Analytics */}
               <div className="flex flex-col gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                  <h3 className="font-bold text-slate-800 mb-6 flex items-center justify-between">
+                    Kepatuhan SLA
+                    <span className="text-xs font-normal text-slate-500">Bulan Ini</span>
+                  </h3>
+                  <div className="flex justify-center mb-4">
+                    <div className="relative w-32 h-32 flex items-center justify-center rounded-full bg-slate-100">
+                      <svg className="absolute w-full h-full transform -rotate-90">
+                        <circle cx="64" cy="64" r="56" fill="transparent" stroke="#f1f5f9" strokeWidth="16" />
+                        <circle cx="64" cy="64" r="56" fill="transparent" stroke={slaStats.percentage >= 80 ? "#10b981" : slaStats.percentage >= 50 ? "#f59e0b" : "#ef4444"} strokeWidth="16" strokeDasharray="351.85" strokeDashoffset={351.85 - (351.85 * slaStats.percentage) / 100} className="transition-all duration-1000" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center">
+                        <span className="text-2xl font-bold text-slate-800">{slaStats.percentage}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-center text-sm text-slate-500">Tiket diselesaikan tepat waktu</p>
+                </div>
+
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                   <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
                     <ArrowRight size={18} className="text-blue-600" /> Kategori Terbanyak

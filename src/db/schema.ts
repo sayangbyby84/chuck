@@ -26,6 +26,8 @@ export const tickets = pgTable('tickets', {
   foto_selesai: text('foto_selesai'),
   tgl_selesai: timestamp('tgl_selesai'),
   durasi_kerja: integer('durasi_kerja'), // in minutes
+  batas_sla: timestamp('batas_sla'),
+  status_sla: varchar('status_sla', { length: 50 }).default('Aman'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });
