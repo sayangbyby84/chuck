@@ -76,6 +76,9 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    // Silently trigger preventive maintenance checker
+    apiFetch('/maintenance/check', { method: 'POST' }).catch(console.error);
+
     fetchData();
     const interval = setInterval(() => {
       fetchData(true);

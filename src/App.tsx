@@ -5,6 +5,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
 import TeknisiDashboard from './pages/TeknisiDashboard';
 import TicketDetail from './pages/TicketDetail';
+import MaintenanceCalendar from './pages/admin/MaintenanceCalendar';
+import MaintenanceSchedule from './pages/teknisi/MaintenanceSchedule';
 
 const App: React.FC = () => {
   return (
@@ -12,8 +14,10 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/maintenance" element={<MaintenanceCalendar />} />
         <Route path="/user" element={<UserDashboard />} />
         <Route path="/teknisi" element={<TeknisiDashboard />} />
+        <Route path="/teknisi/maintenance" element={<MaintenanceSchedule />} />
         <Route path="/tickets/:id" element={<TicketDetail />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>

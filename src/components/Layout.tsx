@@ -6,7 +6,8 @@ import {
   ClipboardList, 
   Users, 
   Bell,
-  Activity
+  Activity,
+  Calendar
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -28,6 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
       { icon: <ClipboardList size={20} />, label: 'Manajemen Tiket', path: '/admin?tab=tickets' },
       { icon: <Users size={20} />, label: 'Data Teknisi', path: '/admin?tab=teknisi' },
+      { icon: <Calendar size={20} />, label: 'Kalender PM', path: '/admin/maintenance' },
     ],
     user: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/user' },
@@ -36,6 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
     teknisi: [
       { icon: <LayoutDashboard size={20} />, label: 'Tugas Saya', path: '/teknisi' },
       { icon: <ClipboardList size={20} />, label: 'Riwayat Kerja', path: '/teknisi?tab=history' },
+      { icon: <Calendar size={20} />, label: 'Jadwal PM', path: '/teknisi/maintenance' },
     ]
   };
 

@@ -31,3 +31,16 @@ export const tickets = pgTable('tickets', {
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });
+
+export const maintenance_schedules = pgTable('maintenance_schedules', {
+  id: serial('id').primaryKey(),
+  nama_alat: varchar('nama_alat', { length: 255 }).notNull(),
+  kategori_alat: varchar('kategori_alat', { length: 100 }).notNull(),
+  lokasi_ruangan: varchar('lokasi_ruangan', { length: 255 }).notNull(),
+  frekuensi_bulan: integer('frekuensi_bulan').notNull(),
+  tgl_mulai: timestamp('tgl_mulai').notNull(),
+  tgl_berikutnya: timestamp('tgl_berikutnya').notNull(),
+  teknisi_id: integer('teknisi_id').references(() => users.id).notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+});

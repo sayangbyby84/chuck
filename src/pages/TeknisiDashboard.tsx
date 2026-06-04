@@ -7,7 +7,8 @@ import {
   Wrench, 
   Clock, 
   CheckCircle2,
-  MapPin
+  MapPin,
+  ShieldCheck
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { convertImageToBase64 } from '../lib/imageUtils';
@@ -26,8 +27,9 @@ const TeknisiDashboard: React.FC = () => {
   const [completingTicket, setCompletingTicket] = useState<any>(null);
   const [acceptingTicket, setAcceptingTicket] = useState<any>(null);
   const [catatan, setCatatan] = useState('');
-  const [fotoSelesai, setFotoSelesai] = useState('');
+  const [fotoSelesai, setFotoSelesai] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [sopChecked, setSopChecked] = useState([false, false, false, false]);
 
   const fetchData = async () => {
     // Fetch stats
@@ -333,7 +335,7 @@ const TeknisiDashboard: React.FC = () => {
                         )}
                         {t.status === 'diproses' && (
                           <button 
-                            onClick={() => setCompletingTicket(t)}
+                            onClick={() => { setCompletingTicket(t); setSopChecked([false, false, false, false]); }}
                             className="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/10"
                           >
                             Selesaikan
@@ -389,20 +391,51 @@ const TeknisiDashboard: React.FC = () => {
                 <p className="text-sm text-slate-500 mt-1">Masukkan hasil pengerjaan untuk {completingTicket.ticket_number}</p>
               </div>
               <form onSubmit={handleComplete} className="p-6 space-y-4">
+                {completingTicket.kategori === 'Preventive Maintenance' && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h3 className="text-sm font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2 flex items-center gap-2">
+                      <ShieldCheck size={16} className="text-blue-600"/> SOP Checklist Pemeliharaan Wajib
+                    </h3>
+                    {[
+                      'Cek stabilitas daya listrik dan fungsi baterai cadangan (backup battery).',
+                      'Kalibrasi tingkat akurasi sensor dan parameter ukur alat.',
+                      'Pembersihan fisik menyeluruh komponen bagian dalam & luar.',
+                      'Uji fungsi performa operasional (Test Run pasca-pemeliharaan).'
+                    ].map((label, idx) => (
+                      <label key={idx} className="flex items-start gap-3 cursor-pointer group">
+                        <input 
+                          type="checkbox" 
+                          checked={sopChecked[idx]}
+                          onChange={(e) => {
+                            const newChecked = [...sopChecked];
+                            newChecked[idx] = e.target.checked;
+                            setSopChecked(newChecked);
+                          }}
+                          className="mt-1 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-slate-700 group-hover:text-slate-900 leading-tight">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Catatan Perbaikan</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Catatan Penanganan</label>
                   <textarea 
                     required value={catatan} onChange={e => setCatatan(e.target.value)}
                     rows={4}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Jelaskan detail apa saja yang sudah diperbaiki..."
+                    placeholder={completingTicket.kategori === 'Preventive Maintenance' ? 'Catat temuan hasil pemeliharaan atau komponen yang diganti...' : 'Jelaskan detail apa saja yang sudah diperbaiki...'}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Foto Bukti Selesai (Opsional)</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Foto Bukti Selesai {completingTicket.kategori === 'Preventive Maintenance' ? '(Wajib)' : '(Opsional)'}
+                  </label>
                   <input 
                     type="file"
                     accept=".png, .jpg, .jpeg"
+                    required={completingTicket.kategori === 'Preventive Maintenance'}
                     onChange={handleImageChange}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                   />
@@ -429,7 +462,12 @@ const TeknisiDashboard: React.FC = () => {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-500/20"
+                    disabled={completingTicket.kategori === 'Preventive Maintenance' && !sopChecked.every(Boolean)}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-all ${
+                      (completingTicket.kategori === 'Preventive Maintenance' && !sopChecked.every(Boolean)) 
+                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
+                    }`}
                   >
                     Simpan & Selesai
                   </button>
