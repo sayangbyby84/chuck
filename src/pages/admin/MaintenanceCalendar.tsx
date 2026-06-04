@@ -42,7 +42,7 @@ const MaintenanceCalendar: React.FC = () => {
     if (s) setSchedules(s);
     const users = await apiFetch('/users');
     if (users) {
-      setTechnicians(users.filter((u: any) => u.role === 'teknisi'));
+      setTechnicians(users);
     }
   };
 
