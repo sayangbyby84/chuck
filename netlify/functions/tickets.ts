@@ -138,6 +138,20 @@ export const handler: Handler = async (event) => {
         `;
         return { statusCode: 200, headers, body: JSON.stringify(result[0]) };
       }
+
+      if (body.action === 'reject') {
+        if (user.role !== 'user') return { statusCode: 403, headers, body: 'Forbidden' };
+        const result = await sql`
+          UPDATE tickets SET status = 'diproses', alasan_penolakan = ${body.alasan_penolakan}, updated_at = NOW()
+          WHERE id = ${body.ticket_id} AND pelapor_id = ${user.id}
+          RETURNING *
+        `;
+
+        if (result.length > 0 && result[0].teknisi_id) {
+          await sql`UPDATE users SET status_teknisi = 'sedang bekerja' WHERE id = ${result[0].teknisi_id}`;
+        }
+        return { statusCode: 200, headers, body: JSON.stringify(result[0]) };
+      }
     }
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };

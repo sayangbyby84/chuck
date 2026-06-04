@@ -22,6 +22,7 @@ export const tickets = pgTable('tickets', {
   tgl_kejadian: timestamp('tgl_kejadian').notNull(),
   teknisi_id: integer('teknisi_id').references(() => users.id),
   catatan_perbaikan: text('catatan_perbaikan'),
+  alasan_penolakan: text('alasan_penolakan'),
   foto_selesai: text('foto_selesai'),
   tgl_selesai: timestamp('tgl_selesai'),
   durasi_kerja: integer('durasi_kerja'), // in minutes

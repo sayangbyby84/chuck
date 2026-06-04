@@ -7,6 +7,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { convertImageToBase64 } from '../lib/imageUtils';
 
 const TicketDetail: React.FC = () => {
   const { id } = useParams();
@@ -16,6 +17,7 @@ const TicketDetail: React.FC = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [catatan, setCatatan] = useState('');
   const [fotoSelesai, setFotoSelesai] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [showCompleteForm, setShowCompleteForm] = useState(false);
 
   const fetchTicket = async () => {
@@ -54,6 +56,22 @@ const TicketDetail: React.FC = () => {
     if (result) {
       setShowCompleteForm(false);
       fetchTicket();
+    }
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const base64 = await convertImageToBase64(file);
+      setFotoSelesai(base64);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Gagal memproses gambar.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -113,6 +131,22 @@ const TicketDetail: React.FC = () => {
               </div>
             </div>
           </div>
+          {/* Rejection Flag */}
+          {ticket.alasan_penolakan && ticket.status !== 'tertutup' && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 m-8 mt-0 rounded-r-xl">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <span className="text-red-500 font-bold">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-bold text-red-800">Perbaikan Ditolak / Dikembalikan</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>Alasan: <span className="font-semibold italic">"{ticket.alasan_penolakan}"</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Content */}
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -190,14 +224,26 @@ const TicketDetail: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">URL Foto Hasil (Opsional)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Foto Hasil Perbaikan (Opsional)</label>
                 <input 
-                  type="url"
-                  className="w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="https://..."
-                  value={fotoSelesai}
-                  onChange={e => setFotoSelesai(e.target.value)}
+                  type="file"
+                  accept=".png, .jpg, .jpeg"
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                 />
+                {isUploading && <p className="text-xs text-emerald-600 mt-2 font-medium">Memproses gambar...</p>}
+                {fotoSelesai && (
+                  <div className="mt-3 relative inline-block">
+                    <img src={fotoSelesai} alt="Preview Hasil" className="h-32 rounded-lg border border-slate-200 object-cover" />
+                    <button 
+                      type="button" 
+                      onClick={() => setFotoSelesai('')}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold border-2 border-white shadow-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="pt-4 flex gap-3">
                 <button 

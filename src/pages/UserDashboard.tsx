@@ -12,6 +12,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { convertImageToBase64 } from '../lib/imageUtils';
 
 const UserDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,6 +32,13 @@ const UserDashboard: React.FC = () => {
   const [lokasi, setLokasi] = useState('');
   const [prioritas, setPrioritas] = useState('Sedang');
   const [deskripsi, setDeskripsi] = useState('');
+  const [fotoKerusakan, setFotoKerusakan] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Verification states
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyTicket, setVerifyTicket] = useState<any>(null);
+  const [alasanPenolakan, setAlasanPenolakan] = useState('');
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -75,6 +83,7 @@ const UserDashboard: React.FC = () => {
       body: JSON.stringify({
         action: 'create',
         judul, kategori, lokasi, prioritas, deskripsi,
+        foto_kerusakan: fotoKerusakan,
         tgl_kejadian: new Date().toISOString()
       })
     });
@@ -84,20 +93,65 @@ const UserDashboard: React.FC = () => {
       setJudul('');
       setLokasi('');
       setDeskripsi('');
+      setFotoKerusakan('');
       fetchData();
     }
   };
 
-  const handleClose = async (ticketId: number) => {
-    if (!confirm('Apakah Anda yakin masalah ini sudah terselesaikan? Tiket akan ditutup dan masuk ke arsip.')) return;
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const base64 = await convertImageToBase64(file);
+      setFotoKerusakan(base64);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Gagal memproses gambar.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleVerifyOpen = (ticket: any) => {
+    setVerifyTicket(ticket);
+    setAlasanPenolakan('');
+    setShowVerifyModal(true);
+  };
+
+  const handleVerifyAccept = async () => {
+    if (!verifyTicket) return;
     const result = await apiFetch('/tickets', {
       method: 'POST',
       body: JSON.stringify({
         action: 'close',
-        ticket_id: ticketId
+        ticket_id: verifyTicket.id
       })
     });
-    if (result) fetchData();
+    if (result) {
+      setShowVerifyModal(false);
+      fetchData();
+    }
+  };
+
+  const handleVerifyReject = async () => {
+    if (!verifyTicket || !alasanPenolakan.trim()) {
+      alert('Mohon isi alasan penolakan.');
+      return;
+    }
+    const result = await apiFetch('/tickets', {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'reject',
+        ticket_id: verifyTicket.id,
+        alasan_penolakan: alasanPenolakan
+      })
+    });
+    if (result) {
+      setShowVerifyModal(false);
+      fetchData();
+    }
   };
 
   // Filter tickets based on sub-tab
@@ -271,7 +325,7 @@ const UserDashboard: React.FC = () => {
                         <div className="flex items-center justify-center gap-2">
                           {t.status === 'selesai_teknisi' && (
                             <button 
-                              onClick={() => handleClose(t.id)}
+                              onClick={() => handleVerifyOpen(t)}
                               className="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-500/10"
                             >
                               Verifikasi
@@ -354,6 +408,28 @@ const UserDashboard: React.FC = () => {
                     placeholder="Jelaskan detail kerusakan yang terjadi agar teknisi cepat memahami..."
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Foto Kerusakan</label>
+                  <input 
+                    type="file"
+                    accept=".png, .jpg, .jpeg"
+                    onChange={handleImageChange}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {isUploading && <p className="text-xs text-blue-600 mt-2 font-medium">Memproses gambar...</p>}
+                  {fotoKerusakan && (
+                    <div className="mt-3 relative inline-block">
+                      <img src={fotoKerusakan} alt="Preview" className="h-32 rounded-lg border border-slate-200 object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => setFotoKerusakan('')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold border-2 border-white shadow-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="pt-4 flex gap-3">
                   <button 
                     type="button" onClick={() => setShowForm(false)}
@@ -373,6 +449,55 @@ const UserDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal Verifikasi */}
+      {showVerifyModal && verifyTicket && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Verifikasi Hasil Perbaikan</h2>
+              <button onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <p className="text-sm font-medium text-slate-700 mb-1">Tiket:</p>
+                <p className="font-bold text-blue-700 text-lg">{verifyTicket.ticket_number}</p>
+                <p className="text-sm font-bold text-slate-800 mt-2">{verifyTicket.judul}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Apakah perbaikan sudah sesuai dan selesai?
+                </label>
+                <p className="text-xs text-slate-500 mb-3">Jika belum selesai atau tidak sesuai, Anda bisa menolaknya dan teknisi akan mengerjakannya kembali.</p>
+                
+                <textarea 
+                  value={alasanPenolakan} 
+                  onChange={e => setAlasanPenolakan(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-4"
+                  placeholder="Opsional: Tulis alasan jika Anda menolak hasil perbaikan..."
+                />
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button 
+                    onClick={handleVerifyReject}
+                    className="flex-1 px-4 py-2.5 bg-white border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-50 font-bold text-sm transition-colors"
+                  >
+                    Tolak / Belum Selesai
+                  </button>
+                  <button 
+                    onClick={handleVerifyAccept}
+                    className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    Selesai & Terima
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

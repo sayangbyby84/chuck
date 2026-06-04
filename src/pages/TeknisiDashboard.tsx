@@ -7,10 +7,10 @@ import {
   Wrench, 
   Clock, 
   CheckCircle2,
-  Camera,
   MapPin
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { convertImageToBase64 } from '../lib/imageUtils';
 
 const TeknisiDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -26,6 +26,7 @@ const TeknisiDashboard: React.FC = () => {
   const [acceptingTicket, setAcceptingTicket] = useState<any>(null);
   const [catatan, setCatatan] = useState('');
   const [fotoSelesai, setFotoSelesai] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchData = async () => {
     // Fetch stats
@@ -99,6 +100,7 @@ const TeknisiDashboard: React.FC = () => {
 
   const handleComplete = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!completingTicket) return;
     try {
       const result = await apiFetch('/tickets', {
         method: 'POST',
@@ -118,6 +120,22 @@ const TeknisiDashboard: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to complete ticket:', err);
+    }
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const base64 = await convertImageToBase64(file);
+      setFotoSelesai(base64);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Gagal memproses gambar.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -289,6 +307,15 @@ const TeknisiDashboard: React.FC = () => {
                           }`}>{t.prioritas}</span>
                         </div>
                         <p className="text-sm text-slate-600 mt-3 line-clamp-2">{t.deskripsi}</p>
+                        
+                        {t.alasan_penolakan && t.status === 'diproses' && (
+                          <div className="mt-3 bg-red-50 p-3 rounded-lg border border-red-200">
+                            <p className="text-xs font-bold text-red-700 flex items-center gap-1">
+                              ⚠️ Ditolak / Dikembalikan User
+                            </p>
+                            <p className="text-sm text-red-600 mt-1 italic">"{t.alasan_penolakan}"</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 self-end md:self-auto border-t md:border-t-0 pt-4 md:pt-0 w-full md:w-auto justify-end">
@@ -368,15 +395,26 @@ const TeknisiDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">URL Foto Bukti Selesai (Opsional)</label>
-                  <div className="relative">
-                    <input 
-                      value={fotoSelesai} onChange={e => setFotoSelesai(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="https://..."
-                    />
-                    <Camera size={18} className="absolute left-3 top-2.5 text-slate-400" />
-                  </div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Foto Bukti Selesai (Opsional)</label>
+                  <input 
+                    type="file"
+                    accept=".png, .jpg, .jpeg"
+                    onChange={handleImageChange}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                  />
+                  {isUploading && <p className="text-xs text-emerald-600 mt-2 font-medium">Memproses gambar...</p>}
+                  {fotoSelesai && (
+                    <div className="mt-3 relative inline-block">
+                      <img src={fotoSelesai} alt="Preview Hasil" className="h-32 rounded-lg border border-slate-200 object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => setFotoSelesai('')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold border-2 border-white shadow-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-4 flex gap-3">
                   <button 
